@@ -3,18 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Master Plan Skripsi - Kulon Progo EBT 2060</title>
-    
-    <!-- Tailwind CSS -->
+    <title>Mission Control: Skripsi Transisi Energi</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Marked.js for Markdown parsing -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-    <!-- Chosen Palette: Earthy & Technical (Emerald, Slate, Blue, Amber) -->
+    <!-- Chosen Palette: Emerald, Slate, Blue, and Warm Neutrals -->
+    <!-- Application Structure Plan: Dashboard ini dirancang sebagai "Mission Control" untuk memanajemen 6 Fase Master Plan Skripsi. Layout menggunakan Grid CSS untuk membagi layar menjadi Navigator Fase (kiri) dan Panel Detail Interaktif (kanan). Di bagian bawah, terdapat area visualisasi (Dashboard Hasil Simulasi) untuk memberikan gambaran konkret mengenai output akhir yang diharapkan (LEAP & AHP). Struktur ini dipilih agar kompleksitas metodologi yang bercabang dapat dieksplorasi secara modular, logis, dan tidak membingungkan pengguna. -->
+    <!-- Visualization & Content Choices: Laporan teks dan flowchart (Mermaid) diubah menjadi Timeline Interaktif (HTML/JS) untuk menavigasi fase. Grafik menggunakan Chart.js (Line Chart untuk Skenario Emisi LEAP, Doughnut Chart untuk Bauran EBT AHP) untuk merepresentasikan tujuan penelitian. Interaksi dinamis menggunakan Vanilla JS untuk memperbarui konten detail dan mengontrol skenario grafik. Library yang digunakan murni Tailwind CSS dan Chart.js (via CDN). Tidak ada SVG/Mermaid yang digunakan, semuanya diganti dengan elemen CSS terstruktur dan Unicode. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
     <style>
         .chart-container {
             position: relative;
@@ -22,620 +19,444 @@
             max-width: 600px;
             margin-left: auto;
             margin-right: auto;
-            height: 30vh;
+            height: 40vh;
             max-height: 350px;
         }
         @media (min-width: 768px) {
-            .chart-container { height: 350px; }
+            .chart-container {
+                height: 350px;
+            }
         }
         
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-
-        .active-tab { background-color: #059669; color: white; border-left: 4px solid #064e3b; }
-        .inactive-tab { background-color: #f8fafc; color: #334155; border-left: 4px solid transparent; }
-        .inactive-tab:hover { background-color: #e2e8f0; }
-
-        /* Markdown Styles for AI Response */
-        .prose-ai p { margin-bottom: 0.5rem; }
-        .prose-ai strong { color: #065f46; }
-        .prose-ai ul { list-style-type: disc; margin-left: 1.5rem; margin-bottom: 0.5rem; }
-        .prose-ai ol { list-style-type: decimal; margin-left: 1.5rem; margin-bottom: 0.5rem; }
-        
-        /* Chat Widget Styles */
-        #chat-widget { transition: transform 0.3s ease, opacity 0.3s ease; }
-        .chat-hidden { transform: translateY(120%); opacity: 0; pointer-events: none; }
-        .chat-visible { transform: translateY(0); opacity: 1; pointer-events: auto; }
-        
-        /* Loading Dots Animation */
-        .loading-dots:after {
-            content: '.';
-            animation: dots 1.5s steps(5, end) infinite;
+        .timeline-step {
+            transition: all 0.3s ease;
         }
-        @keyframes dots {
-            0%, 20% { color: rgba(0,0,0,0); text-shadow: .25em 0 0 rgba(0,0,0,0), .5em 0 0 rgba(0,0,0,0); }
-            40% { color: #10b981; text-shadow: .25em 0 0 rgba(0,0,0,0), .5em 0 0 rgba(0,0,0,0); }
-            60% { text-shadow: .25em 0 0 #10b981, .5em 0 0 rgba(0,0,0,0); }
-            80%, 100% { text-shadow: .25em 0 0 #10b981, .5em 0 0 #10b981; }
+        .timeline-step:hover {
+            transform: translateX(8px);
         }
-
-        /* Custom Checkbox */
-        input[type="checkbox"] {
-            accent-color: #10b981;
-            width: 1.25rem;
-            height: 1.25rem;
-            cursor: pointer;
+        .timeline-active {
+            border-left-color: #10b981 !important;
+            background-color: #ecfdf5 !important;
+        }
+        .timeline-active .step-icon {
+            background-color: #10b981;
+            color: white;
+            border-color: #10b981;
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 font-sans antialiased leading-relaxed pb-24">
+<body class="bg-slate-50 text-slate-800 font-sans antialiased overflow-x-hidden">
 
-    <!-- Header Section -->
-    <header class="bg-slate-900 text-white shadow-lg">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <p class="text-emerald-400 font-semibold tracking-wider text-sm uppercase mb-1">🎯 Mission Control Skripsi</p>
-                    <h1 class="text-2xl md:text-3xl font-bold leading-tight mb-2">Analisis Potensi Bauran Energi Baru Terbarukan di Kab. Kulon Progo</h1>
-                    <p class="text-slate-300 text-sm md:text-base">Berbasis Skenario Transisi Energi 2060</p>
-                </div>
-                <div class="bg-slate-800 p-4 rounded-lg border border-slate-700 w-full md:w-auto">
-                    <p class="text-sm">👨‍🎓 <strong>Kandidat:</strong> Muhammad Fachrurrozy (S1 TF UGM)</p>
-                    <p class="text-sm mt-1">👨‍🏫 <strong>Pembimbing:</strong> Dr. Ahmad Agus Setiawan</p>
-                </div>
+    <header class="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-slate-900 tracking-tight">🎓 Mission Control Skripsi</h1>
+                <p class="text-sm text-slate-500 font-medium">Bauran Energi Baru Terbarukan Kab. Kulon Progo 2060</p>
+            </div>
+            <div class="hidden md:block text-right">
+                <p class="text-sm font-bold text-emerald-600">Muhammad Fachrurrozy</p>
+                <p class="text-xs text-slate-500">S1 Teknik Fisika UGM</p>
             </div>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
 
-        <!-- Introduction / Mukadimah -->
-        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col md:flex-row gap-6 items-center">
-            <div class="flex-1">
-                <h2 class="text-xl font-bold text-slate-800 mb-3">⚖️ Mukadimah Dewan Ahli</h2>
-                <p class="text-slate-600 mb-4">
-                    Skripsi ini adalah proyek <em>multi-disciplinary</em> yang ambisius namun sangat terukur. Perjalanan ini dibagi ke dalam 5 Fase Utama.
+        <section>
+            <div class="mb-6">
+                <h2 class="text-xl font-bold text-slate-800">Pendahuluan: Peta Jalan Metodologi</h2>
+                <p class="text-slate-600 mt-2 max-w-4xl">
+                    Aplikasi ini merangkum Master Plan penyelesaian skripsi yang terbagi ke dalam 6 Fase Utama. Struktur ini menggabungkan analisis geospasial, hidrologi, perancangan sistem energi makro, hingga pengambilan keputusan multikriteria. Silakan pilih fase di bawah ini untuk melihat detail metodologi dan aliran data (Input/Output).
                 </p>
-                <div class="bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg">
-                    <p class="text-amber-800 font-medium">⭐ Aturan Emas:</p>
-                    <p class="text-amber-700 text-sm mt-1">Anda tidak boleh melompat ke Fase berikutnya sebelum Fase sebelumnya selesai. Gunakan pendampingan AI untuk memperlancar progres.</p>
-                </div>
             </div>
-            <div class="bg-emerald-50 rounded-xl p-5 border border-emerald-100 text-center md:w-1/3">
-                <div class="text-4xl mb-2">✨</div>
-                <h3 class="font-bold text-emerald-800">Didukung oleh Gemini AI</h3>
-                <p class="text-xs text-emerald-600 mt-2">Sistem ini dilengkapi asisten AI untuk memandu metodologi Anda kapan saja.</p>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 h-[600px] overflow-y-auto">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4 px-2">Alur Fase Skripsi</h3>
+                    <div id="timeline-container" class="space-y-2 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-300 before:to-transparent">
+                        
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-8 flex flex-col h-[600px] overflow-y-auto">
+                    <div id="phase-detail-container" class="animate-fade-in flex-grow">
+                        
+                    </div>
+                </div>
             </div>
         </section>
 
-        <!-- Progress Tracker Section (NEW) -->
-        <section class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <div class="mb-6 flex justify-between items-end">
-                <div>
-                    <h2 class="text-2xl font-bold text-slate-800">✅ Tracker Progres Skripsi</h2>
-                    <p class="text-slate-600 mt-1 text-sm">Centang tugas yang sudah selesai. Grafik akan otomatis memperbarui progres per fase.</p>
-                </div>
-                <div class="text-right">
-                    <span class="text-3xl font-bold text-emerald-600" id="total-progress-text">0%</span>
-                    <p class="text-xs text-slate-500 uppercase tracking-wide font-bold">Total Selesai</p>
-                </div>
+        <section class="border-t border-slate-200 pt-10 pb-16">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-slate-800">Pratinjau Hasil Simulasi</h2>
+                <p class="text-slate-600 mt-2">
+                    Visualisasi interaktif ini mensimulasikan ekspektasi output dari Fase 4 (LEAP) dan Fase 5 (AHP). Gunakan kontrol di bawah ini untuk melihat bagaimana skenario Transisi Energi mengubah kondisi Business-as-Usual (BAU).
+                </p>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <!-- Checklist Table -->
-                <div class="overflow-x-auto overflow-y-auto max-h-[380px] border border-slate-200 rounded-lg">
-                    <table class="min-w-full text-left text-sm whitespace-nowrap">
-                        <thead class="uppercase tracking-wider border-b border-slate-200 bg-slate-50 sticky top-0 z-10">
-                            <tr>
-                                <th scope="col" class="px-4 py-3 text-center w-12">Status</th>
-                                <th scope="col" class="px-4 py-3 font-semibold text-slate-700">Detail Tugas</th>
-                                <th scope="col" class="px-4 py-3 font-semibold text-slate-700 text-center">Fase</th>
-                            </tr>
-                        </thead>
-                        <tbody id="progress-table-body" class="divide-y divide-slate-200">
-                            <!-- Table rows generated by JS -->
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Progress Chart -->
-                <div class="flex flex-col justify-center items-center bg-slate-50 rounded-lg border border-slate-100 p-4">
-                    <div class="chart-container w-full">
-                        <canvas id="progressChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Interactive Phase Explorer -->
-        <section class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <div class="border-b border-slate-200 bg-slate-50 px-6 py-4">
-                <h2 class="text-xl font-bold text-slate-800">🗺️ Peta Jalan Penyelesaian (5 Fase Utama)</h2>
-                <p class="text-sm text-slate-500 mt-1">Pilih fase di bawah ini untuk melihat detail dan berinteraksi dengan AI.</p>
-            </div>
-            
-            <div class="flex flex-col md:flex-row min-h-[400px]">
-                <!-- Sidebar Nav -->
-                <div class="w-full md:w-1/3 bg-slate-50 border-r border-slate-200 flex flex-col" id="phase-nav">
-                    <!-- Buttons generated by JS -->
-                </div>
                 
-                <!-- Content Area -->
-                <div class="w-full md:w-2/3 p-6 lg:p-8 relative overflow-y-auto max-h-[600px]">
-                    <div id="phase-content" class="animate-fade-in transition-opacity duration-300">
-                        <!-- Content generated by JS -->
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Simulated Outputs Section -->
-        <section class="space-y-6">
-            <div class="mb-2">
-                <h2 class="text-2xl font-bold text-slate-800">📈 Pratinjau Output Simulasi</h2>
-                <p class="text-slate-600 mt-1">Representasi visual dari hasil yang diharapkan pada Fase 3 (LEAP) dan Fase 4 (AHP).</p>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <!-- Chart 1: LEAP Scenario -->
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col">
-                    <div class="flex justify-between items-start mb-4">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                         <div>
-                            <h3 class="text-lg font-bold text-slate-800">☁️ Skenario Emisi (Fase 3: LEAP)</h3>
-                            <p class="text-xs text-slate-500 mt-1">Proyeksi Emisi GRK Sistem Kelistrikan</p>
+                            <h3 class="text-lg font-bold text-slate-800">☁️ Skenario Emisi GRK (LEAP)</h3>
+                            <p class="text-xs text-slate-500 mt-1">Proyeksi emisi sistem kelistrikan hingga 2060</p>
                         </div>
-                        <button id="btn-run-scenario" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded transition-colors shadow-sm focus:outline-none">
-                            ▶️ Jalankan Transisi
+                        <button id="toggle-scenario-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold py-2 px-4 rounded-lg transition-colors shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2">
+                            Mulai Transisi 2060
                         </button>
                     </div>
+                    
                     <div class="chart-container flex-grow">
                         <canvas id="leapChart"></canvas>
                     </div>
-                    <p class="text-sm text-slate-600 mt-4 bg-slate-50 p-3 rounded border border-slate-100" id="leap-desc">
-                        Grafik saat ini menunjukkan skenario <strong>Business as Usual (BAU)</strong> dimana emisi terus meningkat.
-                    </p>
+                    
+                    <div id="leap-context" class="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-100 text-sm text-slate-600 transition-colors">
+                        Skenario saat ini adalah <strong>Business-as-Usual (BAU)</strong>. Ketergantungan pada pembangkit fosil (PLTU) menyebabkan emisi GRK terus meningkat seiring pertumbuhan permintaan listrik.
+                    </div>
                 </div>
 
-                <!-- Chart 2: AHP Priorities -->
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col">
-                    <div class="mb-4">
-                        <h3 class="text-lg font-bold text-slate-800">⚖️ Bobot Prioritas Bauran EBT (Fase 4: AHP)</h3>
-                        <p class="text-xs text-slate-500 mt-1">Ekspektasi hasil sintesis matriks literatur jurnal</p>
+                    <div class="mb-6">
+                        <h3 class="text-lg font-bold text-slate-800">⚖️ Bobot Prioritas Bauran EBT (AHP)</h3>
+                        <p class="text-xs text-slate-500 mt-1">Sintesis Literatur Berdasarkan Kriteria Ekonomi, Lingkungan & Sosial</p>
                     </div>
+                    
                     <div class="chart-container flex-grow flex justify-center items-center">
                         <canvas id="ahpChart"></canvas>
                     </div>
-                    <p class="text-sm text-slate-600 mt-4 bg-slate-50 p-3 rounded border border-slate-100">
-                        Visualisasi pembobotan alternatif EBT. PLTS diproyeksikan mendominasi bauran energi.
-                    </p>
+
+                    <div class="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-100 text-sm text-slate-600">
+                        Hasil ekstraksi literatur jurnal menunjukkan bahwa <strong>PLTS (Energi Surya)</strong> mendominasi prioritas bauran energi masa depan berkat penurunan biaya teknologi dan ketersediaan lahan (analisis QGIS).
+                    </div>
                 </div>
+
             </div>
         </section>
 
     </main>
 
-    <!-- Floating Chat Widget Button -->
-    <button id="chat-toggle-btn" class="fixed bottom-6 right-6 bg-emerald-600 hover:bg-emerald-700 text-white p-4 rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-105 z-50">
-        <span class="text-2xl mr-2">💬</span> <span class="font-bold">Asisten Skripsi ✨</span>
-    </button>
-
-    <!-- Floating Chat Window -->
-    <div id="chat-widget" class="fixed bottom-24 right-6 w-80 md:w-96 bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col z-50 chat-hidden" style="height: 500px;">
-        <div class="bg-emerald-700 text-white p-4 rounded-t-2xl flex justify-between items-center">
-            <h3 class="font-bold">✨ AI Asisten Skripsi</h3>
-            <button id="close-chat-btn" class="text-emerald-200 hover:text-white font-bold">&times;</button>
-        </div>
-        <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-4 bg-slate-50 text-sm">
-            <div class="flex flex-col items-start">
-                <span class="bg-slate-200 text-slate-800 px-3 py-2 rounded-lg rounded-tl-none max-w-[85%]">
-                    Halo Oji! Saya asisten riset AI yang siap membantumu menggunakan LEAP, WEAP, Excel, dan AHP. Ada yang bisa saya bantu hari ini?
-                </span>
-            </div>
-        </div>
-        <div class="p-3 bg-white border-t border-slate-200 rounded-b-2xl flex gap-2">
-            <input type="text" id="chat-input" class="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500" placeholder="Ketik pertanyaanmu..." />
-            <button id="send-chat-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white p-2 rounded-lg transition-colors">
-                ➤
-            </button>
-        </div>
-    </div>
-
-    <!-- JavaScript Logic -->
     <script>
-        // --- 0. Gemini API Implementation ---
-        const apiKey = ""; // Environment handles it
-        
-        async function callGemini(prompt, systemInstruction = "") {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-            const payload = { contents: [{ parts: [{ text: prompt }] }] };
-            if (systemInstruction) payload.systemInstruction = { parts: [{ text: systemInstruction }] };
-
-            let retries = 5, delay = 1000;
-            while (retries > 0) {
-                try {
-                    const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                    if (!response.ok) throw new Error('API Error');
-                    const data = await response.json();
-                    return data.candidates?.[0]?.content?.parts?.[0]?.text || "Maaf, tidak ada respons.";
-                } catch (error) {
-                    retries--;
-                    if (retries === 0) return "⚠️ Maaf, terjadi kesalahan koneksi AI. Coba lagi nanti.";
-                    await new Promise(res => setTimeout(res, delay));
-                    delay *= 2;
-                }
+        const phases = [
+            {
+                id: 1,
+                icon: "📊",
+                title: "Fase 1: DATA & IKLIM",
+                focus: "Pengumpulan data historis sekunder dan penyusunan proyeksi tren masa depan sebagai dasar pemodelan iklim jangka panjang.",
+                steps: [
+                    "Pengumpulan Data Sekunder: Mengunduh data historis cuaca (10 tahun terakhir) dari NASA POWER, BMKG, dan data timbulan sampah dari SIPSN.",
+                    "Proyeksi Tren (Forecasting): Menggunakan Microsoft Excel untuk mengekstrapolasi data iklim (Iradiasi, Kecepatan Angin, Curah Hujan) secara linier hingga tahun 2060."
+                ],
+                inputs: "Data mentah NASA POWER, BMKG, BPS.",
+                outputs: "Data proyeksi cuaca & energi primer 2024-2060 (dikirim ke Fase 3).",
+                connections: [3]
+            },
+            {
+                id: 2,
+                icon: "🌍",
+                title: "Fase 2: QGIS - SPASIAL",
+                focus: "Validasi spasial untuk menentukan area aktual yang dapat digunakan untuk pembangunan pembangkit energi terbarukan tanpa melanggar regulasi.",
+                steps: [
+                    "Input Peta: Memasukkan Shapefile RTRW Kabupaten Kulon Progo, peta topografi (DEM), dan batas wilayah administrasi.",
+                    "Overlay & Eksklusi: Menyingkirkan area pemukiman padat, hutan lindung, dan badan air untuk menemukan lahan kosong potensial.",
+                    "Ekstraksi Luas: Menghitung total area potensial (dalam km²) untuk PLTS dan PLTB menggunakan Field Calculator."
+                ],
+                inputs: "Shapefile Geospasial (.shp), DEM.",
+                outputs: "Area potensial km² (dikirim ke Fase 4) & Catchment Area (dikirim ke Fase 3).",
+                connections: [3, 4]
+            },
+            {
+                id: 3,
+                icon: "💧",
+                title: "Fase 3: WEAP - HIDRO",
+                focus: "Pemodelan hidro-klimatologi untuk mengevaluasi ketersediaan air dan potensi pembangkitan listrik tenaga mikrohidro (PLTMH).",
+                steps: [
+                    "Setup WEAP Basin: Membangun model sistem sungai (catchment) di Kulon Progo.",
+                    "Simulasi & Ekstraksi Data: Memasukkan data curah hujan dan luasan tangkapan air untuk menyimulasikan debit andalan dan output energi (MWh) PLTMH dari tahun 2024 hingga 2060."
+                ],
+                inputs: "Data Curah Hujan (Fase 1), Catchment Area (Fase 2).",
+                outputs: "Potensi Energi Air Tahunan / MWh (dikirim ke Fase 4).",
+                connections: [4]
+            },
+            {
+                id: 4,
+                icon: "⚡",
+                title: "Fase 4: LEAP - ENERGI",
+                focus: "Pemodelan sistem energi makro untuk melihat keseimbangan pasokan dan permintaan listrik, serta merancang skenario transisi.",
+                steps: [
+                    "Setup Current Accounts: Memasukkan data profil permintaan energi (demand) dan jaringan pembangkit eksisting (grid fosil).",
+                    "Simulasi Skenario: Merancang Skenario Business-as-Usual (BAU) dan membandingkannya dengan Skenario Transisi Energi 2060 dengan memasukkan potensi maksimal EBT."
+                ],
+                inputs: "Batas Kapasitas Lahan/MW (Fase 2), Potensi MWh Air (Fase 3).",
+                outputs: "Kriteria Lingkungan (Emisi) & Biaya Sistem (dikirim ke Fase 5).",
+                connections: [5]
+            },
+            {
+                id: 5,
+                icon: "⚖️",
+                title: "Fase 5: AHP - KEPUTUSAN",
+                focus: "Analisis Keputusan Multi-Kriteria untuk menemukan komposisi optimal bauran teknologi EBT.",
+                steps: [
+                    "Sintesis Literatur Jurnal: Mengekstraksi bobot preferensi pakar dari publikasi ilmiah terkait energi terbarukan (menggantikan penyebaran kuesioner primer).",
+                    "Hitung Matriks AHP: Memasukkan kriteria Tekno-Ekonomi, Lingkungan, dan Sosial ke dalam matriks perbandingan berpasangan. Memastikan Consistency Ratio (CR) ≤ 0.1."
+                ],
+                inputs: "Hasil Skenario LEAP (Fase 4), Data Lahan Sosial.",
+                outputs: "Persentase Bobot Bauran EBT Optimal.",
+                connections: [6]
+            },
+            {
+                id: 6,
+                icon: "📝",
+                title: "Fase 6: PENULISAN",
+                focus: "Sintesis seluruh hasil analisis perangkat lunak menjadi dokumen naskah akademik.",
+                steps: [
+                    "Eksekusi Bab 1-5: Menulis interpretasi grafik LEAP, peta QGIS, dan matriks AHP ke dalam format skripsi.",
+                    "Persiapan Sidang: Penyusunan slide presentasi (PPT) yang menonjolkan visualisasi teknis, serta pengecekan plagiasi (Turnitin) dan referensi (Mendeley)."
+                ],
+                inputs: "Seluruh Output Fase 1-5.",
+                outputs: "Naskah Skripsi Final & Slide Sidang.",
+                connections: []
             }
-        }
-
-        Chart.defaults.font.family = "'Inter', 'Helvetica', 'Arial', sans-serif";
-        Chart.defaults.color = '#475569';
-
-        // --- 1. Progress Tracker Implementation ---
-        // Default tasks
-        const defaultTasks = [
-            { id: '1.1', phase: 1, task: "Pengumpulan Data Iklim & Lahan (NASA, BMKG, RTRW)", done: false },
-            { id: '1.2', phase: 1, task: "Ekstraksi Batasan Kapasitas Lahan Potensial", done: false },
-            { id: '1.3', phase: 1, task: "Proyeksi Tren Iklim Dasar dengan Excel", done: false },
-            { id: '2.1', phase: 2, task: "Setup Area & Batasan Waktu di WEAP", done: false },
-            { id: '2.2', phase: 2, task: "Input Data Cuaca & Ekstraksi Debit PLTMH", done: false },
-            { id: '3.1', phase: 3, task: "Setup Demand & Current Accounts di LEAP", done: false },
-            { id: '3.2', phase: 3, task: "Simulasi Skenario BAU & Transisi Energi 2060", done: false },
-            { id: '4.1', phase: 4, task: "Merancang Hierarki Penilaian AHP", done: false },
-            { id: '4.2', phase: 4, task: "Ekstraksi Bobot via Literatur Jurnal & Validasi (CR ≤ 0.1)", done: false },
-            { id: '5.1', phase: 5, task: "Penyusunan & Finalisasi Naskah Bab 1 - 5", done: false },
-            { id: '5.2', phase: 5, task: "Cek Turnitin, Rapikan Mendeley, & Buat PPT", done: false },
         ];
 
-        // Load tasks from localStorage or use defaults
-        let progressTasks = JSON.parse(localStorage.getItem('skripsiProgressTasks')) || defaultTasks;
+        let currentPhaseId = 1;
+        const timelineContainer = document.getElementById('timeline-container');
+        const detailContainer = document.getElementById('phase-detail-container');
 
-        const tableBody = document.getElementById('progress-table-body');
-        const totalProgressText = document.getElementById('total-progress-text');
-        
-        let progressChartInstance = null;
-
-        function saveProgress() {
-            localStorage.setItem('skripsiProgressTasks', JSON.stringify(progressTasks));
-        }
-
-        function calculateProgressData() {
-            let totalDone = 0;
-            const phaseCounts = { 1: {total:0, done:0}, 2: {total:0, done:0}, 3: {total:0, done:0}, 4: {total:0, done:0}, 5: {total:0, done:0} };
-            
-            progressTasks.forEach(t => {
-                phaseCounts[t.phase].total++;
-                if (t.done) {
-                    phaseCounts[t.phase].done++;
-                    totalDone++;
-                }
-            });
-
-            const totalPercent = Math.round((totalDone / progressTasks.length) * 100);
-            
-            const chartData = [];
-            for (let i = 1; i <= 5; i++) {
-                const p = phaseCounts[i];
-                const pct = p.total > 0 ? Math.round((p.done / p.total) * 100) : 0;
-                chartData.push(pct);
-            }
-
-            return { totalPercent, chartData };
-        }
-
-        function renderProgressTable() {
-            tableBody.innerHTML = '';
-            progressTasks.forEach((task, index) => {
-                const tr = document.createElement('tr');
-                tr.className = task.done ? 'bg-emerald-50' : 'bg-white hover:bg-slate-50 transition-colors';
+        function renderTimeline() {
+            timelineContainer.innerHTML = '';
+            phases.forEach(phase => {
+                const isActive = phase.id === currentPhaseId;
                 
-                tr.innerHTML = `
-                    <td class="px-4 py-3 text-center border-r border-slate-100">
-                        <input type="checkbox" id="task-${index}" ${task.done ? 'checked' : ''}>
-                    </td>
-                    <td class="px-4 py-3 ${task.done ? 'line-through text-slate-400' : 'text-slate-700'}">
-                        <label for="task-${index}" class="cursor-pointer block w-full">${task.task}</label>
-                    </td>
-                    <td class="px-4 py-3 text-center">
-                        <span class="inline-block px-2 py-1 bg-slate-200 text-slate-600 rounded text-xs font-bold">Fase ${task.phase}</span>
-                    </td>
-                `;
-
-                // Add event listener to checkbox
-                const checkbox = tr.querySelector('input');
-                checkbox.addEventListener('change', (e) => {
-                    progressTasks[index].done = e.target.checked;
-                    saveProgress();
-                    renderProgressTable(); // Re-render to update strikethrough & bg color
-                    updateProgressChart();
-                });
-
-                tableBody.appendChild(tr);
-            });
-        }
-
-        function updateProgressChart() {
-            const data = calculateProgressData();
-            totalProgressText.innerText = `${data.totalPercent}%`;
-
-            if (progressChartInstance) {
-                progressChartInstance.data.datasets[0].data = data.chartData;
-                progressChartInstance.update();
-            } else {
-                const ctx = document.getElementById('progressChart').getContext('2d');
-                progressChartInstance = new Chart(ctx, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Fase 1', 'Fase 2', 'Fase 3', 'Fase 4', 'Fase 5'],
-                        datasets: [{
-                            label: 'Progres Penyelesaian (%)',
-                            data: data.chartData,
-                            backgroundColor: '#10b981', // Emerald 500
-                            borderRadius: 4,
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                max: 100,
-                                ticks: { stepSize: 25, callback: (value) => value + '%' }
-                            },
-                            x: { grid: { display: false } }
-                        },
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: { callbacks: { label: (ctx) => ` Penyelesaian: ${ctx.parsed.y}%` } }
-                        }
-                    }
-                });
-            }
-        }
-
-        // Initialize Tracker
-        renderProgressTable();
-        updateProgressChart();
-
-
-        // --- 2. Phase Navigation & Master Data ---
-        const phasesData = [
-            {
-                id: 1, icon: "📊", title: "Fase 1: Fondasi Data & Prediksi Iklim", expert: "Pakar Data & Iklim",
-                focus: "Mengumpulkan data mentah, mendefinisikan batasan wilayah, dan menyusun proyeksi tren iklim.",
-                steps: [
-                    "<strong>Langkah 1: Pengumpulan Data Sekunder.</strong> Unduh data iklim historis (NASA POWER/BMKG), data RTRW, dan sosio-ekonomi.",
-                    "<strong>Langkah 2: Ekstraksi Batasan Lahan.</strong> Gunakan literatur BPS/RTRW untuk mendapat total lahan potensial PLTS & PLTB.",
-                    "<strong>Langkah 3: Proyeksi Tren Iklim Dasar.</strong> Gunakan Excel (Trendline/Regresi Linear) pada data iklim historis untuk memprediksi cuaca hingga 2060."
-                ],
-                tools: "📝 Excel, Portal NASA POWER, SIPSN, BPS", output: "Tabel Excel proyeksi Cuaca & Batas Kapasitas Lahan."
-            },
-            {
-                id: 2, icon: "💧", title: "Fase 2: Pemodelan Hidro-Klimatologi", expert: "Pakar Sumber Daya Air",
-                focus: "Menggunakan WEAP untuk memodelkan batas ketersediaan air bagi PLTMH.",
-                steps: [
-                    "<strong>Langkah 4: Setup Dasar WEAP.</strong> Buat area 'Kulon Progo Basin' (2024-2060). Gambar skema sungai utama.",
-                    "<strong>Langkah 5: Input Data Iklim.</strong> Masukkan hasil proyeksi tren Excel (Fase 1) ke modul iklim WEAP dan run."
-                ],
-                tools: "🌊 WEAP (Water Evaluation And Planning)", output: "Kurva debit air & potensi energi PLTMH."
-            },
-            {
-                id: 3, icon: "⚡", title: "Fase 3: Pemodelan Sistem Energi Makro", expert: "Pakar Transisi Energi",
-                focus: "Menggunakan LEAP untuk memodelkan supply-demand listrik dan target Net Zero Emission (NZE).",
-                steps: [
-                    "<strong>Langkah 6: Setup Current Accounts.</strong> Input Demand (BPS), Transformation, dan Resources di LEAP.",
-                    "<strong>Langkah 7: Membuat Skenario.</strong> Buat Skenario 1 (BAU) dan Skenario 2 (Transisi Energi 2060)."
-                ],
-                tools: "⚙️ LEAP", output: "Biaya Sistem, Skenario Emisi GRK, Bauran Kapasitas."
-            },
-            {
-                id: 4, icon: "⚖️", title: "Fase 4: Pengambilan Keputusan (MCDM)", expert: "Pakar Analisis MCDM",
-                focus: "Menggunakan metode AHP untuk menentukan prioritas teknologi EBT secara objektif berdasarkan tinjauan literatur.",
-                steps: [
-                    "<strong>Langkah 8: Merancang Hierarki AHP.</strong> Kriteria: Tekno-Ekonomi, Lingkungan, Sosial. Alternatif: PLTS, PLTB, PLTMH, Biomassa.",
-                    "<strong>Langkah 9: Sintesis Literatur & Perhitungan.</strong> Ekstraksi nilai preferensi dari jurnal Q1-Q4 terkait, hitung matriks (CR &le; 0.1)."
-                ],
-                tools: "📈 Jurnal Referensi, Excel (Matriks AHP)", output: "Bobot prioritas bauran EBT optimal."
-            },
-            {
-                id: 5, icon: "📝", title: "Fase 5: Penulisan & Penyelesaian", expert: "Ketua Dewan",
-                focus: "Merangkai semua angka, grafik, dan narasi menjadi sebuah naskah akademik yang komprehensif.",
-                steps: [
-                    "<strong>Langkah 10: Eksekusi Bab.</strong> Finalisasi Bab 1-3. Tuangkan hasil simulasi ke Bab 4. Simpulkan di Bab 5.",
-                    "<strong>Langkah 11: Persiapan Sidang.</strong> Cek plagiasi, rapikan sitasi, dan buat PPT."
-                ],
-                tools: "📚 Word, Mendeley, PowerPoint", output: "Naskah Skripsi Final."
-            }
-        ];
-
-        let currentPhase = 1;
-        const navContainer = document.getElementById('phase-nav');
-        const contentContainer = document.getElementById('phase-content');
-
-        function renderNavigation() {
-            navContainer.innerHTML = '';
-            phasesData.forEach(phase => {
-                const btn = document.createElement('button');
-                const isActive = phase.id === currentPhase;
-                btn.className = `w-full text-left px-6 py-4 flex items-center gap-3 transition-colors duration-200 font-medium ${isActive ? 'active-tab' : 'inactive-tab border-b border-slate-200'}`;
-                btn.innerHTML = `<span class="text-xl">${phase.icon}</span> <span>Fase ${phase.id}</span>`;
-                btn.onclick = () => {
-                    currentPhase = phase.id;
-                    renderNavigation();
-                    renderContent();
+                const el = document.createElement('div');
+                el.className = `timeline-step relative flex items-center p-3 cursor-pointer border-l-4 rounded-r-lg mb-2 ${isActive ? 'timeline-active border-emerald-500 bg-emerald-50' : 'border-transparent hover:bg-slate-100'}`;
+                el.onclick = () => {
+                    currentPhaseId = phase.id;
+                    renderTimeline();
+                    renderDetail();
                 };
-                navContainer.appendChild(btn);
+
+                const numberCircle = document.createElement('div');
+                numberCircle.className = `step-icon flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm mr-4 z-10 bg-white ${isActive ? 'border-emerald-500 text-emerald-600' : 'border-slate-300 text-slate-400'}`;
+                numberCircle.innerText = phase.id;
+
+                const content = document.createElement('div');
+                content.className = 'flex-grow';
+                content.innerHTML = `
+                    <p class="text-sm font-bold ${isActive ? 'text-emerald-800' : 'text-slate-700'} flex items-center gap-2">
+                        <span>${phase.icon}</span> ${phase.title}
+                    </p>
+                `;
+
+                el.appendChild(numberCircle);
+                el.appendChild(content);
+                timelineContainer.appendChild(el);
             });
         }
 
-        function renderContent() {
-            const phase = phasesData.find(p => p.id === currentPhase);
-            contentContainer.style.opacity = 0;
-            
-            setTimeout(() => {
-                let stepsHtml = phase.steps.map(step => `<li class="mb-3 pl-2 border-l-2 border-emerald-500 text-slate-700">${step}</li>`).join('');
-                contentContainer.innerHTML = `
-                    <div class="inline-block px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold uppercase tracking-wider mb-4 border border-slate-200">
-                        Peran: ${phase.expert}
-                    </div>
-                    <h3 class="text-2xl font-bold text-emerald-700 mb-2">${phase.title}</h3>
-                    <p class="text-slate-600 text-lg mb-6 leading-relaxed">${phase.focus}</p>
-                    
-                    <div class="mb-6">
-                        <h4 class="font-bold text-slate-800 mb-3 flex items-center gap-2">🛠️ Langkah Pengerjaan</h4>
-                        <ul class="list-none ml-2">${stepsHtml}</ul>
-                    </div>
-                    
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 my-6">
-                        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200">
-                            <h4 class="font-bold text-slate-700 text-sm uppercase mb-1">Peralatan / Software</h4>
-                            <p class="text-sm text-slate-600">${phase.tools}</p>
-                        </div>
-                        <div class="bg-emerald-50 p-4 rounded-lg border border-emerald-100">
-                            <h4 class="font-bold text-emerald-800 text-sm uppercase mb-1">Ekspektasi Output</h4>
-                            <p class="text-sm text-emerald-700 font-medium">${phase.output}</p>
-                        </div>
-                    </div>
+        function renderDetail() {
+            const phase = phases.find(p => p.id === currentPhaseId);
+            if (!phase) return;
 
-                    <div class="mt-8 pt-6 border-t border-slate-200">
-                        <button id="ai-tips-btn" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform hover:-translate-y-1 flex items-center justify-center gap-2">
-                            <span>✨ Dapatkan Tips Eksekusi AI untuk Fase Ini</span>
-                        </button>
-                        <div id="ai-tips-result" class="mt-4 p-4 rounded-lg bg-slate-800 text-slate-100 hidden"></div>
+            // Reset animation
+            detailContainer.classList.remove('animate-fade-in');
+            void detailContainer.offsetWidth; // trigger reflow
+            detailContainer.classList.add('animate-fade-in');
+
+            const stepsHtml = phase.steps.map((step, index) => `
+                <li class="flex items-start mb-3">
+                    <span class="flex-shrink-0 bg-slate-200 text-slate-700 rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold mr-3 mt-0.5">${index + 1}</span>
+                    <span class="text-slate-600 leading-relaxed">${step}</span>
+                </li>
+            `).join('');
+
+            const connectedPhases = phase.connections.map(targetId => {
+                const targetPhase = phases.find(p => p.id === targetId);
+                return `<span class="inline-block bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-1 rounded-md mr-2 mb-2">&#8594; ${targetPhase.title}</span>`;
+            }).join('');
+
+            detailContainer.innerHTML = `
+                <div class="flex items-center gap-3 mb-4 border-b border-slate-100 pb-4">
+                    <div class="text-4xl">${phase.icon}</div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">${phase.title}</h2>
                     </div>
-                `;
-                contentContainer.style.opacity = 1;
+                </div>
 
-                document.getElementById('ai-tips-btn').addEventListener('click', async () => {
-                    const resultDiv = document.getElementById('ai-tips-result');
-                    resultDiv.classList.remove('hidden');
-                    resultDiv.innerHTML = `<span class="loading-dots font-semibold text-emerald-400">Gemini sedang merumuskan tips</span>`;
-                    
-                    const systemInstruction = "Kamu adalah Dosen Ahli Teknik Fisika UGM. Berikan nasehat spesifik, praktis, dan singkat kepada mahasiswa yang mengerjakan skripsi transisi energi. Format bullet points.";
-                    const prompt = `Berikan 3 tips praktis untuk fase: "${phase.title}". Konteks: ${phase.focus}. Langkahnya: ${phase.steps.join(' ')}. Panggil mahasiswa dengan 'Oji'.`;
+                <div class="mb-6">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-2">Fokus Utama</h3>
+                    <p class="text-slate-700 text-lg leading-relaxed bg-slate-50 p-4 rounded-lg border border-slate-100">${phase.focus}</p>
+                </div>
 
-                    const responseText = await callGemini(prompt, systemInstruction);
-                    resultDiv.innerHTML = `<div class="prose-ai text-sm">${marked.parse(responseText)}</div>`;
-                });
-            }, 150);
+                <div class="mb-8 flex-grow">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Langkah Pengerjaan</h3>
+                    <ul class="list-none m-0 p-0">
+                        ${stepsHtml}
+                    </ul>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-auto pt-6 border-t border-slate-200">
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                        <h4 class="text-xs font-bold text-blue-800 uppercase mb-1">Menerima Input Dari</h4>
+                        <p class="text-sm text-blue-700">${phase.inputs}</p>
+                    </div>
+                    <div class="bg-amber-50 p-4 rounded-lg border border-amber-100">
+                        <h4 class="text-xs font-bold text-amber-800 uppercase mb-1">Menghasilkan Output Ke</h4>
+                        <p class="text-sm text-amber-700 mb-2">${phase.outputs}</p>
+                        ${connectedPhases}
+                    </div>
+                </div>
+            `;
         }
 
-        renderNavigation();
-        renderContent();
+        // Initialize Timeline and Detail view
+        renderTimeline();
+        renderDetail();
 
-        // --- 3. Chatbot Integration ---
-        const chatToggleBtn = document.getElementById('chat-toggle-btn');
-        const chatWidget = document.getElementById('chat-widget');
-        const closeChatBtn = document.getElementById('close-chat-btn');
-        const chatInput = document.getElementById('chat-input');
-        const sendChatBtn = document.getElementById('send-chat-btn');
-        const chatMessages = document.getElementById('chat-messages');
 
-        function toggleChat() {
-            if(chatWidget.classList.contains('chat-hidden')) {
-                chatWidget.classList.remove('chat-hidden');
-                chatWidget.classList.add('chat-visible');
-                chatInput.focus();
-            } else {
-                chatWidget.classList.remove('chat-visible');
-                chatWidget.classList.add('chat-hidden');
-            }
-        }
-        
-        chatToggleBtn.addEventListener('click', toggleChat);
-        closeChatBtn.addEventListener('click', toggleChat);
+        // --- CHART INITIALIZATION ---
+        Chart.defaults.font.family = "'Inter', system-ui, -apple-system, sans-serif";
+        Chart.defaults.color = '#64748b';
 
-        function addMessage(text, isUser = false) {
-            const wrapper = document.createElement('div');
-            wrapper.className = `flex flex-col ${isUser ? 'items-end' : 'items-start'}`;
-            const msgBubble = document.createElement('div');
-            msgBubble.className = `px-3 py-2 rounded-lg max-w-[85%] prose-ai ${isUser ? 'bg-emerald-600 text-white rounded-tr-none' : 'bg-slate-200 text-slate-800 rounded-tl-none'}`;
-            if(isUser) msgBubble.innerText = text;
-            else msgBubble.innerHTML = marked.parse(text); 
-            wrapper.appendChild(msgBubble);
-            chatMessages.appendChild(wrapper);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        async function handleSendChat() {
-            const userText = chatInput.value.trim();
-            if(!userText) return;
-            addMessage(userText, true);
-            chatInput.value = '';
-            
-            const loadingId = 'loading-' + Date.now();
-            const loadingWrapper = document.createElement('div');
-            loadingWrapper.id = loadingId;
-            loadingWrapper.className = `flex flex-col items-start`;
-            loadingWrapper.innerHTML = `<div class="bg-slate-200 text-emerald-600 px-3 py-2 rounded-lg rounded-tl-none font-bold text-lg">...</div>`;
-            chatMessages.appendChild(loadingWrapper);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-
-            const systemInstruction = "Kamu asisten Dosen Teknik Fisika UGM yang membantu M. Fachrurrozy (Oji) skripsi simulasi transisi energi Kulon Progo (LEAP, WEAP, AHP). Jawab singkat & praktikal.";
-            const aiResponse = await callGemini(userText, systemInstruction);
-
-            document.getElementById(loadingId).remove();
-            addMessage(aiResponse, false);
-        }
-
-        sendChatBtn.addEventListener('click', handleSendChat);
-        chatInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') handleSendChat(); });
-
-        // --- 4. Static Charts (Outputs) ---
-        const ctxAhp = document.getElementById('ahpChart').getContext('2d');
-        new Chart(ctxAhp, {
-            type: 'doughnut',
-            data: {
-                labels: ['PLTS (Surya)', 'Biomassa (MSW)', 'PLTB (Angin)', 'PLTMH (Air)'],
-                datasets: [{ data: [45, 25, 20, 10], backgroundColor: ['#eab308', '#22c55e', '#0ea5e9', '#64748b'], borderWidth: 2, borderColor: '#ffffff' }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, cutout: '65%', plugins: { legend: { position: 'right', labels: { usePointStyle: true, font: { size: 12 } } } } }
-        });
-
+        // 1. LEAP Scenario Chart (Line Chart)
         const ctxLeap = document.getElementById('leapChart').getContext('2d');
         const years = ['2024', '2030', '2040', '2050', '2060'];
-        const bauData = [100, 140, 210, 300, 420];
-        const nzeData = [100, 120, 80, 30, 0]; 
+        const bauEmissions = [120, 180, 290, 450, 680];
+        const nzeEmissions = [120, 150, 90, 30, 0];
 
         const leapChart = new Chart(ctxLeap, {
             type: 'line',
             data: {
                 labels: years,
-                datasets: [{ label: 'BAU (Business as Usual)', data: bauData, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderWidth: 3, tension: 0.4, fill: true }]
+                datasets: [
+                    {
+                        label: 'Skenario BAU',
+                        data: bauEmissions,
+                        borderColor: '#94a3b8',
+                        backgroundColor: 'rgba(148, 163, 184, 0.1)',
+                        borderWidth: 3,
+                        borderDash: [5, 5],
+                        fill: true,
+                        tension: 0.3
+                    }
+                ]
             },
             options: {
-                responsive: true, maintainAspectRatio: false, interaction: { mode: 'index', intersect: false },
-                plugins: { legend: { position: 'top' } },
-                scales: { y: { beginAtZero: true, title: { display: true, text: 'Emisi (Ribu Ton CO2e)' } }, x: { grid: { display: false } } }
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.dataset.label}: ${context.parsed.y} Ribu Ton CO2e`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Emisi (Ribu Ton CO2e)' },
+                        grid: { borderDash: [4, 4], color: '#f1f5f9' }
+                    },
+                    x: {
+                        grid: { display: false }
+                    }
+                }
             }
         });
 
-        const btnRunScenario = document.getElementById('btn-run-scenario');
-        const leapDesc = document.getElementById('leap-desc');
-        let scenarioRun = false;
+        // 2. AHP Weights Chart (Doughnut Chart)
+        const ctxAhp = document.getElementById('ahpChart').getContext('2d');
+        const ahpChart = new Chart(ctxAhp, {
+            type: 'doughnut',
+            data: {
+                labels: ['PLTS (Surya)', 'PLTB (Angin)', 'PLTMH (Air)', 'Biomassa'],
+                datasets: [{
+                    data: [42, 28, 18, 12],
+                    backgroundColor: [
+                        '#f59e0b', // Amber/Sun
+                        '#0ea5e9', // Blue/Wind
+                        '#3b82f6', // Indigo/Water
+                        '#10b981'  // Emerald/Biomass
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#ffffff',
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            usePointStyle: true,
+                            padding: 20,
+                            font: { size: 12 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return ` ${context.label}: ${context.parsed}%`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
 
-        btnRunScenario.addEventListener('click', () => {
-            if (!scenarioRun) {
-                leapChart.data.datasets.push({ label: 'Transisi Energi 2060 (NZE)', data: nzeData, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', borderWidth: 3, tension: 0.4, fill: true });
-                leapChart.update();
-                btnRunScenario.innerText = '🔄 Reset Simulasi';
-                btnRunScenario.classList.replace('bg-blue-600', 'bg-slate-500');
-                btnRunScenario.classList.replace('hover:bg-blue-700', 'hover:bg-slate-600');
-                leapDesc.innerHTML = `Grafik membandingkan <strong>BAU</strong> dengan <strong>Skenario Transisi 2060</strong>. Intervensi berhasil menekan emisi hingga mendekati nol.`;
-                leapDesc.classList.add('bg-emerald-50', 'border-emerald-200');
-                scenarioRun = true;
+        // Toggle Scenario Interaction
+        const toggleBtn = document.getElementById('toggle-scenario-btn');
+        const leapContext = document.getElementById('leap-context');
+        let isTransisi = false;
+
+        toggleBtn.addEventListener('click', () => {
+            isTransisi = !isTransisi;
+            
+            if (isTransisi) {
+                // Add NZE Scenario Line
+                leapChart.data.datasets.push({
+                    label: 'Skenario Transisi Energi',
+                    data: nzeEmissions,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.3
+                });
+                
+                toggleBtn.innerText = 'Kembali ke Skenario BAU';
+                toggleBtn.classList.replace('bg-emerald-600', 'bg-slate-600');
+                toggleBtn.classList.replace('hover:bg-emerald-700', 'hover:bg-slate-700');
+                
+                leapContext.innerHTML = `Skenario <strong>Transisi Energi 2060</strong> aktif. Integrasi kapasitas EBT (berdasarkan luas lahan QGIS) secara bertahap memensiunkan PLTU, memaksa emisi turun mendekati nol (NZE) pada tahun 2060.`;
+                leapContext.classList.add('bg-emerald-50', 'border-emerald-200', 'text-emerald-800');
+                leapContext.classList.remove('bg-slate-50', 'border-slate-100', 'text-slate-600');
             } else {
+                // Remove NZE Scenario Line
                 leapChart.data.datasets.pop();
-                leapChart.update();
-                btnRunScenario.innerText = '▶️ Jalankan Transisi';
-                btnRunScenario.classList.replace('bg-slate-500', 'bg-blue-600');
-                btnRunScenario.classList.replace('hover:bg-slate-600', 'hover:bg-blue-700');
-                leapDesc.innerHTML = `Grafik saat ini menunjukkan skenario <strong>Business as Usual (BAU)</strong> dimana emisi terus meningkat.`;
-                leapDesc.classList.remove('bg-emerald-50', 'border-emerald-200');
-                scenarioRun = false;
+                
+                toggleBtn.innerText = 'Mulai Transisi 2060';
+                toggleBtn.classList.replace('bg-slate-600', 'bg-emerald-600');
+                toggleBtn.classList.replace('hover:bg-slate-700', 'hover:bg-emerald-700');
+                
+                leapContext.innerHTML = `Skenario saat ini adalah <strong>Business-as-Usual (BAU)</strong>. Ketergantungan pada pembangkit fosil (PLTU) menyebabkan emisi GRK terus meningkat seiring pertumbuhan permintaan listrik.`;
+                leapContext.classList.remove('bg-emerald-50', 'border-emerald-200', 'text-emerald-800');
+                leapContext.classList.add('bg-slate-50', 'border-slate-100', 'text-slate-600');
             }
+            leapChart.update();
         });
+
     </script>
 </body>
 </html>
